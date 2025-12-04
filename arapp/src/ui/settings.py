@@ -19,11 +19,12 @@ def SettingsView(page: ft.Page):
         
         dialog = ft.AlertDialog(
             modal=True,
-            title=ft.Text("Confirm Logout"),
-            content=ft.Text("Are you sure you want to log out?"),
+            bgcolor="white",
+            title=ft.Text("Confirm Logout", color="black"),
+            content=ft.Text("Are you sure you want to log out?", color="black"),
             actions=[
-                ft.TextButton("Cancel", on_click=close_dlg),
-                ft.TextButton("Yes", on_click=confirm_logout),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color="#002A7A"), on_click=close_dlg),
+                ft.TextButton("Yes", style=ft.ButtonStyle(color="#002A7A"), on_click=confirm_logout),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -38,9 +39,9 @@ def SettingsView(page: ft.Page):
             label="Current Password",
             password=True,
             can_reveal_password=True,
-            border_color="white",
-            label_style=ft.TextStyle(color="white"),
-            text_style=ft.TextStyle(color="white"),
+            border_color="#002A7A",
+            label_style=ft.TextStyle(color="black"),
+            text_style=ft.TextStyle(color="black"),
         )
         
         new_password_field = ft.TextField(
@@ -48,9 +49,9 @@ def SettingsView(page: ft.Page):
             label="New Password",
             password=True,
             can_reveal_password=True,
-            border_color="white",
-            label_style=ft.TextStyle(color="white"),
-            text_style=ft.TextStyle(color="white"),
+            border_color="#002A7A",
+            label_style=ft.TextStyle(color="black"),
+            text_style=ft.TextStyle(color="black"),
         )
         
         retype_password_field = ft.TextField(
@@ -58,9 +59,9 @@ def SettingsView(page: ft.Page):
             label="Re-type New Password",
             password=True,
             can_reveal_password=True,
-            border_color="white",
-            label_style=ft.TextStyle(color="white"),
-            text_style=ft.TextStyle(color="white"),
+            border_color="#002A7A",
+            label_style=ft.TextStyle(color="black"),
+            text_style=ft.TextStyle(color="black"),
         )
         
         def validate_and_change_password(e):
@@ -98,10 +99,11 @@ def SettingsView(page: ft.Page):
                 # Show success message
                 success_dialog = ft.AlertDialog(
                     modal=True,
-                    title=ft.Text("Success"),
-                    content=ft.Text("Password has been updated successfully!"),
+                    bgcolor="white",
+                    title=ft.Text("Success", color="black"),
+                    content=ft.Text("Password has been updated successfully!", color="black"),
                     actions=[
-                        ft.TextButton("OK", on_click=lambda e: close_success_dialog(success_dialog))
+                        ft.TextButton("OK", style=ft.ButtonStyle(color="#002A7A"), on_click=lambda e: close_success_dialog(success_dialog))
                     ],
                 )
                 page.overlay.append(success_dialog)
@@ -118,7 +120,8 @@ def SettingsView(page: ft.Page):
         
         password_dialog = ft.AlertDialog(
             modal=True,
-            title=ft.Text("Change Password"),
+            bgcolor="white",
+            title=ft.Text("Change Password", color="black"),
             content=ft.Container(
                 content=ft.Column(
                     controls=[
@@ -133,8 +136,8 @@ def SettingsView(page: ft.Page):
                 padding=20
             ),
             actions=[
-                ft.TextButton("Cancel", on_click=close_password_dialog),
-                ft.TextButton("Confirm", on_click=validate_and_change_password),
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color="#002A7A"), on_click=close_password_dialog),
+                ft.TextButton("Confirm", style=ft.ButtonStyle(color="#002A7A"), on_click=validate_and_change_password),
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -180,7 +183,7 @@ def SettingsView(page: ft.Page):
                 height=500
             ),
             actions=[
-                ft.TextButton("Close", on_click=lambda e: close_about_dialog(about_dialog))
+                ft.TextButton("Close", style=ft.ButtonStyle(color="#002A7A"), on_click=lambda e: close_about_dialog(about_dialog))
             ],
         )
         page.overlay.append(about_dialog)
@@ -211,7 +214,7 @@ def SettingsView(page: ft.Page):
                                         icon_size=30,
                                         on_click=lambda _: page.go("/home")
                                     ),
-                                    ft.Container(expand=True),
+                                    ft.Container(width=45),
                                     ft.Image(
                                         src="sarina_logo.png",
                                         width=120,
@@ -221,32 +224,40 @@ def SettingsView(page: ft.Page):
                                 ],
                                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                             ),
-                            padding=ft.padding.only(top=20, left=10, right=20, bottom=10)
+                            padding=ft.padding.only(top=50, left=10, right=20, bottom=10)
                         ),
                         
                         # Profile Section
                         ft.Container(
-                            content=ft.Column(
+                            content=ft.Row(
                                 controls=[
+                                    ft.Container(width=20),
                                     ft.Icon(
                                         ft.Icons.ACCOUNT_CIRCLE,
                                         size=80,
                                         color="white"
                                     ),
-                                    ft.Text(
-                                        "JUAN DELA CRUZ",
-                                        size=22,
-                                        weight=ft.FontWeight.BOLD,
-                                        color="white"
+                                    ft.Container(width=5),
+                                    ft.Column(
+                                        controls=[
+                                            ft.Text(
+                                                "JUAN DELA CRUZ",
+                                                size=22,
+                                                weight=ft.FontWeight.BOLD,
+                                                color="white"
+                                            ),
+                                            ft.Text(
+                                                "Student",
+                                                size=16,
+                                                color="white70"
+                                            ),
+                                        ],
+                                        alignment=ft.MainAxisAlignment.CENTER,
+                                        spacing=0
                                     ),
-                                    ft.Text(
-                                        "Student",
-                                        size=16,
-                                        color="white70"
-                                    ),
+                                    ft.Container(expand=True),
                                 ],
-                                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                spacing=5
+                                vertical_alignment=ft.CrossAxisAlignment.CENTER,
                             ),
                             padding=ft.padding.only(top=10, bottom=20)
                         ),
@@ -350,7 +361,7 @@ def SettingsView(page: ft.Page):
                                 on_click=show_logout_confirmation
                             ),
                             alignment=ft.alignment.center,
-                            padding=ft.padding.only(bottom=40)
+                            padding=ft.padding.only(bottom=80)
                         )
                     ],
                     spacing=0

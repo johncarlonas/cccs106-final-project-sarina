@@ -1,12 +1,12 @@
 import flet as ft
 import time
 import threading
-from ui.opening import OpeningView
-from ui.new_user import NewUserView
-from ui.user_selection import UserSelectionView
-from ui.login_signup import LoginSignupView
-from ui.home import HomeView
-from ui.settings import SettingsView
+from src.ui.opening import OpeningView
+from src.ui.new_user import NewUserView
+from src.ui.user_selection import UserSelectionView
+from src.ui.login_signup import LoginSignupView
+from src.ui.home import HomeView
+from src.ui.settings import SettingsView
 
 def main(page: ft.Page):
     page.title = "SARI NA"
@@ -52,4 +52,5 @@ def main(page: ft.Page):
     page.on_view_pop = view_pop
     page.go(page.route)
 
-ft.app(target=main, assets_dir="../assets")
+if __name__ == "__main__":
+    ft.app(target=main, assets_dir="assets", upload_dir="assets")

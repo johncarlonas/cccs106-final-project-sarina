@@ -164,7 +164,7 @@ def UserSelectionView(page: ft.Page):
                                 on_click=on_continue_click,
                             ),
                             alignment=ft.alignment.center,
-                            padding=ft.padding.only(bottom=30),
+                            padding=ft.padding.only(bottom=80),
                             visible=False
                         )
                     ],

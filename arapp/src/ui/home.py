@@ -48,32 +48,43 @@ def HomeView(page: ft.Page):
                                 ],
                                 vertical_alignment=ft.CrossAxisAlignment.CENTER
                             ),
-                            padding=ft.padding.only(top=20, left=80, right=20, bottom=10)
+                            padding=ft.padding.only(top=50, left=80, right=20, bottom=5)
                         ),
+                        
+                        ft.Container(height=10),  # Spacer between header and search
                         
                         # Search Bar
                         ft.Container(
-                            content=ft.TextField(
-                                ref=search_query,
-                                hint_text="Where are you going?",
-                                hint_style=ft.TextStyle(color="white70"),
-                                text_style=ft.TextStyle(color="white"),
-                                border_radius=25,
-                                filled=True,
-                                bgcolor="#003580",
-                                border_color="transparent",
-                                focused_border_color="#0055D4",
-                                content_padding=ft.padding.symmetric(horizontal=20, vertical=10),
-                                suffix=ft.IconButton(
-                                    icon=ft.Icons.SEARCH,
-                                    icon_color="white",
-                                    on_click=on_search_click
-                                )
+                            content=ft.Row(
+                                controls=[
+                                    ft.TextField(
+                                        ref=search_query,
+                                        hint_text="Where are you going?",
+                                        hint_style=ft.TextStyle(color="white70"),
+                                        text_style=ft.TextStyle(color="white"),
+                                        border_radius=25,
+                                        filled=True,
+                                        bgcolor="#80000000",
+                                        border_color="transparent",
+                                        focused_border_color="transparent",
+                                        content_padding=ft.padding.symmetric(horizontal=20, vertical=15),
+                                        text_vertical_align=ft.VerticalAlignment.CENTER,
+                                        expand=True,
+                                    ),
+                                    ft.IconButton(
+                                        icon=ft.Icons.SEARCH,
+                                        icon_color="white",
+                                        icon_size=28,
+                                        on_click=on_search_click
+                                    )
+                                ],
+                                spacing=10,
+                                vertical_alignment=ft.CrossAxisAlignment.CENTER
                             ),
                             padding=ft.padding.symmetric(horizontal=20, vertical=10)
                         ),
                         
-                        # Recent Section
+                        # Recent Section (Hidden)
                         ft.Container(
                             content=ft.Column(
                                 controls=[
@@ -106,13 +117,14 @@ def HomeView(page: ft.Page):
                                 spacing=10,
                                 horizontal_alignment=ft.CrossAxisAlignment.CENTER
                             ),
-                            padding=ft.padding.symmetric(horizontal=30, vertical=20)
+                            padding=ft.padding.symmetric(horizontal=30, vertical=20),
+                            visible=True
                         ),
                         
                         # Spacer
-                        ft.Container(expand=True),
+                        ft.Container(height=50),
                         
-                        # Location Toggle and AR Mode Section (Hidden by default)
+                        # Location Toggle and AR Mode Section (Centered)
                         ft.Container(
                             content=ft.Column(
                                 controls=[
@@ -162,7 +174,7 @@ def HomeView(page: ft.Page):
                                                 "View AR Mode",
                                                 size=16,
                                                 weight=ft.FontWeight.BOLD,
-                                                color="#041E42"
+                                                color="#002A7A"
                                             ),
                                             padding=ft.padding.symmetric(horizontal=80, vertical=12)
                                         ),
@@ -176,9 +188,11 @@ def HomeView(page: ft.Page):
                                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                                 spacing=0
                             ),
-                            padding=ft.padding.only(bottom=40),
                             visible=False
-                        )
+                        ),
+                        
+                        # Bottom spacer
+                        ft.Container(expand=True)
                     ],
                     spacing=0
                 ),
