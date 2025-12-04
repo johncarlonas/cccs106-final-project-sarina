@@ -5,6 +5,8 @@ from ui.opening import OpeningView
 from ui.new_user import NewUserView
 from ui.user_selection import UserSelectionView
 from ui.login_signup import LoginSignupView
+from ui.home import HomeView
+from ui.settings import SettingsView
 
 def main(page: ft.Page):
     page.title = "SARI NA"
@@ -32,12 +34,19 @@ def main(page: ft.Page):
             page.views.append(UserSelectionView(page))
         elif page.route == "/login_signup":
             page.views.append(LoginSignupView(page))
+        elif page.route == "/home":
+            page.views.append(HomeView(page))
+        elif page.route == "/settings":
+            page.views.append(SettingsView(page))
         page.update()
 
     def view_pop(view):
-        page.views.pop()
-        top_view = page.views[-1]
-        page.go(top_view.route)
+        if len(page.views) > 1:
+            page.views.pop()
+            top_view = page.views[-1]
+            page.go(top_view.route)
+        else:
+            page.window_destroy()
 
     page.on_route_change = route_change
     page.on_view_pop = view_pop
