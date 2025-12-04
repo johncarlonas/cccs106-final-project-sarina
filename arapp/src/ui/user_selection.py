@@ -40,7 +40,7 @@ def UserSelectionView(page: ft.Page):
     
     def on_continue_click(e):
         if selected_option["value"]:
-            page.go("/login_signup")
+            page.go("/home")
     
     # CSPCean card
     cspcean_card = ft.Container(
@@ -164,7 +164,7 @@ def UserSelectionView(page: ft.Page):
                                 on_click=on_continue_click,
                             ),
                             alignment=ft.alignment.center,
-                            padding=ft.padding.only(bottom=30),
+                            padding=ft.padding.only(bottom=80),
                             visible=False
                         )
                     ],

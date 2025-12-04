@@ -49,7 +49,7 @@ def NewUserView(page: ft.Page):
                                 ),
                                 on_click=lambda _: page.go("/user_selection")
                             ),
-                            padding=ft.padding.only(bottom=35),
+                            padding=ft.padding.only(bottom=80),
                             alignment=ft.alignment.center
                         )
                     ],
