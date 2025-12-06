@@ -1,0 +1,8 @@
+flet
+opencv-python
+numpy
+openrouteservice
+osmnx
+simplification
+numpy
+threading
