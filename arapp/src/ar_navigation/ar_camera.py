@@ -4,10 +4,9 @@ import numpy as np
 import base64
 import time
 from .bearing import bearing_to_target
-from math import sqrt
 
 # path to arrow PNG
-ARROW_PATH = "arapp/assets/arrow.png"
+ARROW_PATH = "arapp/assets/arrow_up.png"
 
 # if arrow not found error
 _arrow_img = cv2.imread(ARROW_PATH, cv2.IMREAD_UNCHANGED)
@@ -26,29 +25,44 @@ def _rotate_image(img, angle):
     return cv2.warpAffine(img, M, (w, h), borderMode=cv2.BORDER_TRANSPARENT)
 
 def _overlay_perspective_arrow(frame, arrow_rgba, angle_deg, scale=1.0):
-    # arrow_rgba: HxWx4 (BGRA) with arrow pointing up.
-    # rotate arrow:
+    fh, fw = frame.shape[:2] # Get frame height/width first
+
+    # rotate arrow
     arrow_rot = _rotate_image(arrow_rgba, angle_deg)
 
-    # perspective scaling (simulate distance) via simple scale
+    # calculate target size
     h_a, w_a = arrow_rot.shape[:2]
-    # baseline size:
     target_w = int(w_a * scale)
     target_h = int(h_a * scale)
+
+    # Safety Check 1: Don't draw if too small
     if target_w < 10 or target_h < 10:
         return frame
+
+    # Safety Check 2: Shrink if it exceeds frame dimensions
+    # This prevents the crash (487px arrow vs 480px screen)
+    if target_h > fh:
+        ratio = fh / target_h
+        target_h = fh
+        target_w = int(target_w * ratio)
+    
+    if target_w > fw:
+        ratio = fw / target_w
+        target_w = fw
+        target_h = int(target_h * ratio)
+    # --- FIX ENDS HERE ---
+
     arrow_resized = cv2.resize(arrow_rot, (target_w, target_h), interpolation=cv2.INTER_AREA)
 
     # position: bottom-center with small offset forward
-    fh, fw = frame.shape[:2]
     x = fw//2 - target_w//2
-    y = int(fh * 0.65) - target_h//2  # slightly above bottom
+    y = int(fh * 0.65) - target_h//2 
 
-    # clamp
+    # clamp coordinates to ensure they stay inside frame
     x = max(0, min(x, fw - target_w))
     y = max(0, min(y, fh - target_h))
 
-    # split
+    # split channels
     b,g,r,a = cv2.split(arrow_resized)
     arrow_rgb = cv2.merge((b,g,r))
     mask = a.astype(float)/255.0
@@ -56,6 +70,10 @@ def _overlay_perspective_arrow(frame, arrow_rgba, angle_deg, scale=1.0):
 
     roi = frame[y:y+target_h, x:x+target_w].astype(float)
     arrow_rgb = arrow_rgb.astype(float)
+
+    # Final sanity check to avoid crash if rounding errors occur
+    if roi.shape[:2] != mask.shape[:2]:
+        return frame
 
     blended = (roi * (1 - mask) + arrow_rgb * mask).astype(np.uint8)
     frame[y:y+target_h, x:x+target_w] = blended
