@@ -25,7 +25,8 @@ def _rotate_image(img, angle):
     return cv2.warpAffine(img, M, (w, h), borderMode=cv2.BORDER_TRANSPARENT)
 
 def _overlay_perspective_arrow(frame, arrow_rgba, angle_deg, scale=1.0):
-    fh, fw = frame.shape[:2] # Get frame height/width first
+    # get frame height/width first
+    fh, fw = frame.shape[:2]
 
     # rotate arrow
     arrow_rot = _rotate_image(arrow_rgba, angle_deg)
@@ -35,12 +36,11 @@ def _overlay_perspective_arrow(frame, arrow_rgba, angle_deg, scale=1.0):
     target_w = int(w_a * scale)
     target_h = int(h_a * scale)
 
-    # Safety Check 1: Don't draw if too small
+    # don't draw if too small
     if target_w < 10 or target_h < 10:
         return frame
 
-    # Safety Check 2: Shrink if it exceeds frame dimensions
-    # This prevents the crash (487px arrow vs 480px screen)
+    # shrink if it exceeds frame dimensions
     if target_h > fh:
         ratio = fh / target_h
         target_h = fh
@@ -50,7 +50,6 @@ def _overlay_perspective_arrow(frame, arrow_rgba, angle_deg, scale=1.0):
         ratio = fw / target_w
         target_w = fw
         target_h = int(target_h * ratio)
-    # --- FIX ENDS HERE ---
 
     arrow_resized = cv2.resize(arrow_rot, (target_w, target_h), interpolation=cv2.INTER_AREA)
 
@@ -71,7 +70,7 @@ def _overlay_perspective_arrow(frame, arrow_rgba, angle_deg, scale=1.0):
     roi = frame[y:y+target_h, x:x+target_w].astype(float)
     arrow_rgb = arrow_rgb.astype(float)
 
-    # Final sanity check to avoid crash if rounding errors occur
+    # final sanity check to avoid crash if rounding errors occur
     if roi.shape[:2] != mask.shape[:2]:
         return frame
 

@@ -27,14 +27,14 @@ class ARView(ft.View):
         # helper functions to get GPS and heading from page
         def get_user_location():
             try:
-                # Try getting real GPS
+                # try getting real GPS
                 loc = page.geolocator.get_geolocation()
                 if loc and loc.latitude is not None:
                     return (loc.latitude, loc.longitude)
-                # If no signal, raise exception to trigger fallback
+                # if no signal, raise exception to trigger fallback
                 raise Exception("No real GPS signal")
             except Exception:
-                # fallback location (replace with your specific campus entry coords)
+                # fallback location
                 return (13.405571, 123.373531)
 
         def get_user_heading():
