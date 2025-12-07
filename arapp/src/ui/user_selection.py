@@ -32,15 +32,19 @@ def UserSelectionView(page: ft.Page):
     
     def on_cspcean_click(e):
         selected_option["value"] = "cspcean"
+        page.session.set("selected_role", "CSPCean")
         update_cards()
     
     def on_visitor_click(e):
         selected_option["value"] = "visitor"
+        page.session.set("selected_role", "Visitor")
         update_cards()
     
     def on_continue_click(e):
         if selected_option["value"]:
-            page.go("/home")
+            # Mark that first launch is complete
+            page.client_storage.set("first_launch", False)
+            page.go("/login_signup")
     
     # CSPCean card
     cspcean_card = ft.Container(

@@ -10,9 +10,39 @@ class ARView(ft.View):
         super().__init__("/ar")
         self.page = page
         self.img = ft.Image(src="", width=page.window.width, height=page.window.height, fit=ft.ImageFit.COVER)
-        self.controls = [self.img, ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: page.go("/"))]
-
+        self.simulated_heading = 0
         self.stop_event = threading.Event()
+        
+        # Back button to go to home
+        def on_back_click(e):
+            # Stop the camera thread first
+            self.stop_event.set()
+            # Then navigate
+            page.go("/home")
+        
+        back_button = ft.Container(
+            content=ft.IconButton(
+                icon=ft.Icons.ARROW_BACK,
+                icon_color="white",
+                icon_size=30,
+                on_click=on_back_click
+            ),
+            bgcolor="#80000000",
+            border_radius=25,
+            padding=5,
+            top=40,
+            left=20
+        )
+        
+        self.controls = [
+            ft.Stack(
+                [
+                    self.img,
+                    back_button
+                ],
+                expand=True
+            )
+        ]
 
         simulated_heading_state = {'heading': 0}
 
@@ -53,9 +83,17 @@ class ARView(ft.View):
                 return 0.0
 
         def frame_callback(b64):
+            # Check if we should stop before updating
+            if self.stop_event.is_set():
+                return
             # update Flet image using base64 payload
-            self.img.src_base64 = b64
-            self.page.update()
+            try:
+                self.img.src_base64 = b64
+                if self.page:
+                    self.page.update()
+            except Exception:
+                # Page might be gone, stop the thread
+                self.stop_event.set()
 
         # start camera thread
         threading.Thread(target=generate_frames, args=(route, frame_callback, get_user_location, get_user_heading, self.stop_event), daemon=True).start()

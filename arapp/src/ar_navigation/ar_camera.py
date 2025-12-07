@@ -21,7 +21,7 @@ def _encode_frame_to_base64(frame):
 # rotate image based on direction
 def _rotate_image(img, angle):
     h, w = img.shape[:2]
-    M = cv2.getRotationMatrix2D((w//2, h//2), -angle, 1.0)
+    M = cv2.getRotationMatrix2D((w//2, h//2), angle, 1.0) 
     return cv2.warpAffine(img, M, (w, h), borderMode=cv2.BORDER_TRANSPARENT)
 
 def _overlay_perspective_arrow(frame, arrow_rgba, angle_deg, scale=1.0):
@@ -113,7 +113,7 @@ def generate_frames(route_points, frame_callback, get_user_location_func, get_us
         # find current target waypoint
         tx, ty = route_points[waypoint_index][0], route_points[waypoint_index][1]  # lat, lon
         bearing = bearing_to_target(user_lat, user_lon, tx, ty)
-
+           
         # compute simple distance using Haversine approx
         def haversine_m(a_lat,a_lon,b_lat,b_lon):
             from math import radians, sin, cos, sqrt, asin
@@ -133,7 +133,7 @@ def generate_frames(route_points, frame_callback, get_user_location_func, get_us
             dist = haversine_m(user_lat, user_lon, tx, ty)
 
         # arrow should point in direction user should walk relative to device heading
-        angle_to_draw = (bearing - user_heading + 360) % 360
+        angle_to_draw = (user_heading - bearing + 360) % 360
 
         # scale arrow with approximate distance: closer => larger
         # clamp between 0.4 and 1.4
