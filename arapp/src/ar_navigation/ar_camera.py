@@ -3,11 +3,14 @@ import cv2
 import numpy as np
 import base64
 import time
+import os
+import platform
 from .bearing import bearing_to_target
 from math import sqrt
 
-# path to arrow PNG
-ARROW_PATH = "arapp/assets/arrow.png"
+# path to arrow PNG - use absolute path based on this file's location
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+ARROW_PATH = os.path.join(_current_dir, "..", "..", "assets", "arrow.png")
 
 # if arrow not found error
 _arrow_img = cv2.imread(ARROW_PATH, cv2.IMREAD_UNCHANGED)
@@ -62,9 +65,52 @@ def _overlay_perspective_arrow(frame, arrow_rgba, angle_deg, scale=1.0):
     return frame
 
 def generate_frames(route_points, frame_callback, get_user_location_func, get_user_heading_func, stop_flag):
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        raise RuntimeError("Camera not available")
+    # Try different camera indices to find an available camera
+    # On Android: 0 = front camera, 1 = back camera
+    # On desktop: 0 = default camera, 1+ = additional cameras
+    cap = None
+    
+    # Try camera indices 0, 1, 2 to find any available camera
+    for camera_index in [0, 1, 2]:
+        cap = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)  # Use DirectShow on Windows
+        if cap.isOpened():
+            # Test if we can actually read a frame
+            ret, test_frame = cap.read()
+            if ret:
+                print(f"Camera found at index {camera_index}")
+                break
+            else:
+                cap.release()
+                cap = None
+        else:
+            if cap is not None:
+                cap.release()
+            cap = None
+    
+    # If DirectShow failed, try without it
+    if cap is None or not cap.isOpened():
+        for camera_index in [0, 1, 2]:
+            cap = cv2.VideoCapture(camera_index)
+            if cap.isOpened():
+                ret, test_frame = cap.read()
+                if ret:
+                    print(f"Camera found at index {camera_index} (no DirectShow)")
+                    break
+                else:
+                    cap.release()
+                    cap = None
+            else:
+                if cap is not None:
+                    cap.release()
+                cap = None
+        
+    if cap is None or not cap.isOpened():
+        raise RuntimeError("No camera available. Please check if your camera is connected and not being used by another application.")
+    
+    # Set camera properties for better AR experience
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    cap.set(cv2.CAP_PROP_FPS, 30)
 
     # convert loaded arrow to BGRA if needed
     arrow_rgba = _arrow_img.copy()
