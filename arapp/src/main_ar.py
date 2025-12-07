@@ -3,6 +3,8 @@ import flet as ft
 from ui.search_view import SearchView
 from ui.ar_view import ARView
 
+# paayos na lang UI neto kapag iintegrate na thanks
+
 def main(page: ft.Page):
     page.title = "SARI NA"
     page.window_width = 400
