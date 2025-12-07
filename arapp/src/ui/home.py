@@ -9,6 +9,21 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ar_navigation.routing import get_route
 
 def HomeView(page: ft.Page):
+    # Get current user from session/storage
+    user_email = page.session.get("user_email") or page.client_storage.get("logged_in_user")
+    
+    # Get user data from database
+    from database.db import supabase
+    user_name = "User"
+    
+    if user_email:
+        try:
+            response = supabase.table("users").select("name").eq("email", user_email).execute()
+            if response.data and len(response.data) > 0:
+                user_name = response.data[0].get("name", "User")
+        except Exception as e:
+            print(f"Error fetching user data: {e}")
+    
     # Load places from places_cache.json
     places_file = os.path.join(os.path.dirname(__file__), "..", "places_cache.json")
     with open(places_file, 'r') as f:
@@ -246,7 +261,7 @@ def HomeView(page: ft.Page):
                         # Greeting Text
                         ft.Container(
                             content=ft.Text(
-                                "Hello, User!",
+                                f"Hello, {user_name}!",
                                 color="white",
                                 size=20,
                                 weight=ft.FontWeight.BOLD,
