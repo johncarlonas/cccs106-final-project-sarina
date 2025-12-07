@@ -1,7 +1,12 @@
 import os
+import sys
 from datetime import datetime
 from supabase import create_client, Client
 from dotenv import load_dotenv
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils.password_hashing import PasswordHasher
 
 # Load environment variables
 load_dotenv()
@@ -126,11 +131,14 @@ def get_weekly_search_trend():
 def add_user(name, email, password, role):
     """Add a new user"""
     try:
+        # Hash password before storing
+        hashed_password = PasswordHasher.hash_password(password)
+        
         created_at = datetime.now().isoformat()
         data = {
             "name": name,
             "email": email,
-            "password": password,
+            "password": hashed_password,
             "role": role,
             "created_at": created_at,
             "last_login": created_at
@@ -170,23 +178,34 @@ def check_user_exists(email):
         return False
 
 def verify_user_login(email, password):
-    """Verify user login credentials"""
+    """Verify user login credentials using password hash"""
     try:
-        response = supabase.table("users").select("*").eq("email", email).eq("password", password).execute()
+        # Get user by email
+        response = supabase.table("users").select("*").eq("email", email).execute()
+        
         if response.data and len(response.data) > 0:
-            # Update last login
-            user_id = response.data[0]["id"]
-            supabase.table("users").update({"last_login": datetime.now().isoformat()}).eq("id", user_id).execute()
-            return True
+            user = response.data[0]
+            hashed_password = user["password"]
+            
+            # Verify password using bcrypt
+            if PasswordHasher.verify_password(password, hashed_password):
+                # Update last login
+                user_id = user["id"]
+                supabase.table("users").update({"last_login": datetime.now().isoformat()}).eq("id", user_id).execute()
+                return True
+        
         return False
     except Exception as e:
         print(f"Error verifying login: {e}")
         return False
 
 def update_user_password(email, new_password):
-    """Update user password"""
+    """Update user password with hashing"""
     try:
-        response = supabase.table("users").update({"password": new_password}).eq("email", email).execute()
+        # Hash new password before storing
+        hashed_password = PasswordHasher.hash_password(new_password)
+        
+        response = supabase.table("users").update({"password": hashed_password}).eq("email", email).execute()
         return len(response.data) > 0
     except Exception as e:
         print(f"Error updating password: {e}")

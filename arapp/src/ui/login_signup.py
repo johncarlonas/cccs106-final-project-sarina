@@ -6,7 +6,7 @@ import re
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from database.db import check_user_exists, verify_user_login
+from database.db import check_user_exists, verify_user_login, supabase
 
 def LoginSignupView(page: ft.Page):
     # Set theme for password reveal icon color
@@ -186,7 +186,20 @@ def LoginSignupView(page: ft.Page):
         else:
             page.client_storage.remove("remembered_email")
         
-        page.go("/home")
+        # Check user role - if Admin, go to dashboard, else go to home
+        try:
+            response = supabase.table("users").select("role").eq("email", email).execute()
+            if response.data and len(response.data) > 0:
+                user_role = response.data[0]["role"]
+                if user_role == "Admin":
+                    page.go("/dashboard")
+                else:
+                    page.go("/home")
+            else:
+                page.go("/home")
+        except Exception as e:
+            print(f"Error checking user role: {e}")
+            page.go("/home")
     
     def switch_to_signup(e):
         signup_button.bgcolor = "white"

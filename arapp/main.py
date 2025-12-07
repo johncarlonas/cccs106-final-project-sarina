@@ -11,6 +11,7 @@ from src.ui.forgot_password import ForgotPasswordView
 from src.ui.home import HomeView
 from src.ui.settings import SettingsView
 from src.ui.ar_view import ARView
+from src.admin_ui.dashboard import DashboardView
 
 def main(page: ft.Page):
     page.title = "SARI NA"
@@ -68,6 +69,8 @@ def main(page: ft.Page):
             page.views.append(ForgotPasswordView(page))
         elif page.route == "/home":
             page.views.append(HomeView(page))
+        elif page.route == "/dashboard":
+            page.views.append(DashboardView(page))
         elif page.route == "/settings":
             page.views.append(SettingsView(page))
         elif page.route == "/ar":
@@ -79,8 +82,7 @@ def main(page: ft.Page):
             page.views.pop()
             top_view = page.views[-1]
             page.go(top_view.route)
-        else:
-            page.window_destroy()
+        # Don't destroy window, just stay on current view
 
     page.on_route_change = route_change
     page.on_view_pop = view_pop

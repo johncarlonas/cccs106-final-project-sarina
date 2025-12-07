@@ -236,7 +236,36 @@ def DashboardView(page: ft.Page):
         page.open(confirm_modal)
     
     def on_logout(e):
-        page.go("/login")
+        """Show logout confirmation dialog"""
+        def close_dlg(e):
+            dialog.open = False
+            page.update()
+        
+        def confirm_logout(e):
+            dialog.open = False
+            page.update()
+            
+            # Clear session and storage
+            page.client_storage.remove("logged_in_user")
+            page.session.clear()
+            
+            # Navigate to login/signup
+            page.go("/login_signup")
+        
+        dialog = ft.AlertDialog(
+            modal=True,
+            bgcolor="white",
+            title=ft.Text("Confirm Logout", color="black"),
+            content=ft.Text("Are you sure you want to log out?", color="black"),
+            actions=[
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color="#002A7A"), on_click=close_dlg),
+                ft.TextButton("Yes", style=ft.ButtonStyle(color="#002A7A"), on_click=confirm_logout),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(dialog)
+        dialog.open = True
+        page.update()
     
     # Create user list container that will be updated
     user_list_column = ft.Column(scroll=ft.ScrollMode.AUTO, spacing=8)
