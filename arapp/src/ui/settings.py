@@ -1,8 +1,29 @@
 import flet as ft
+import sys
+import os
+import re
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from database.db import update_user_password
 
 def SettingsView(page: ft.Page):
+    # Get current user email from session/storage
+    user_email = page.session.get("user_email") or page.client_storage.get("logged_in_user")
+    
+    # Get user data from database
+    from database.db import supabase
+    user_data = {"name": "Guest", "role": "Unknown"}
+    
+    if user_email:
+        try:
+            response = supabase.table("users").select("*").eq("email", user_email).execute()
+            if response.data and len(response.data) > 0:
+                user_data = response.data[0]
+        except Exception as e:
+            print(f"Error fetching user data: {e}")
+    
     # References for change password fields
-    current_password = ft.Ref[ft.TextField]()
     new_password = ft.Ref[ft.TextField]()
     retype_password = ft.Ref[ft.TextField]()
     
@@ -15,6 +36,12 @@ def SettingsView(page: ft.Page):
         def confirm_logout(e):
             dialog.open = False
             page.update()
+            
+            # Clear session and storage
+            page.client_storage.remove("logged_in_user")
+            page.session.clear()
+            
+            # Navigate to login/signup
             page.go("/login_signup")
         
         dialog = ft.AlertDialog(
@@ -33,16 +60,47 @@ def SettingsView(page: ft.Page):
         page.update()
     
     def show_change_password_dialog(e):
-        """Show change password dialog"""
-        current_password_field = ft.TextField(
-            ref=current_password,
-            label="Current Password",
-            password=True,
-            can_reveal_password=True,
-            border_color="#002A7A",
-            label_style=ft.TextStyle(color="black"),
-            text_style=ft.TextStyle(color="black"),
+        """Show change password dialog with rules"""
+        # Password rules refs
+        rule_length = ft.Text(
+            "• Minimum 8 characters",
+            color="red",
+            size=12
         )
+        rule_uppercase = ft.Text(
+            "• At least 1 uppercase letter",
+            color="red",
+            size=12
+        )
+        rule_special = ft.Text(
+            "• At least 1 special character (!@#$%^&*)",
+            color="red",
+            size=12
+        )
+        
+        def check_password_rules(password):
+            """Check password against all rules"""
+            has_length = len(password) >= 8
+            has_uppercase = bool(re.search(r'[A-Z]', password))
+            has_special = bool(re.search(r'[!@#$%^&*(),.?":{}|<>]', password))
+            
+            return {
+                'length': has_length,
+                'uppercase': has_uppercase,
+                'special': has_special,
+                'all_valid': has_length and has_uppercase and has_special
+            }
+        
+        def on_password_change(e):
+            """Update password rules display"""
+            password = new_password_field.value
+            rules = check_password_rules(password)
+            
+            rule_length.color = "#00AA00" if rules['length'] else "red"
+            rule_uppercase.color = "#00AA00" if rules['uppercase'] else "red"
+            rule_special.color = "#00AA00" if rules['special'] else "red"
+            
+            page.update()
         
         new_password_field = ft.TextField(
             ref=new_password,
@@ -52,6 +110,7 @@ def SettingsView(page: ft.Page):
             border_color="#002A7A",
             label_style=ft.TextStyle(color="black"),
             text_style=ft.TextStyle(color="black"),
+            on_change=on_password_change
         )
         
         retype_password_field = ft.TextField(
@@ -66,25 +125,25 @@ def SettingsView(page: ft.Page):
         
         def validate_and_change_password(e):
             # Clear previous errors
-            current_password_field.error_text = None
             new_password_field.error_text = None
             retype_password_field.error_text = None
             
             is_valid = True
             
-            # Validate current password
-            if not current_password_field.value:
-                current_password_field.error_text = "This field is required to verify your identity"
-                is_valid = False
-            
             # Validate new password
             if not new_password_field.value:
-                new_password_field.error_text = "This field is required to set a new password"
+                new_password_field.error_text = "This field is required"
                 is_valid = False
+            else:
+                # Check password rules
+                rules = check_password_rules(new_password_field.value)
+                if not rules['all_valid']:
+                    new_password_field.error_text = "Password must meet all requirements"
+                    is_valid = False
             
             # Validate retype password
             if not retype_password_field.value:
-                retype_password_field.error_text = "This field is required to confirm your new password"
+                retype_password_field.error_text = "This field is required"
                 is_valid = False
             elif new_password_field.value and retype_password_field.value != new_password_field.value:
                 retype_password_field.error_text = "Passwords do not match"
@@ -93,22 +152,27 @@ def SettingsView(page: ft.Page):
             page.update()
             
             if is_valid:
-                password_dialog.open = False
-                page.update()
-                
-                # Show success message
-                success_dialog = ft.AlertDialog(
-                    modal=True,
-                    bgcolor="white",
-                    title=ft.Text("Success", color="black"),
-                    content=ft.Text("Password has been updated successfully!", color="black"),
-                    actions=[
-                        ft.TextButton("OK", style=ft.ButtonStyle(color="#002A7A"), on_click=lambda e: close_success_dialog(success_dialog))
-                    ],
-                )
-                page.overlay.append(success_dialog)
-                success_dialog.open = True
-                page.update()
+                # Update password in database
+                if update_user_password(user_email, new_password_field.value):
+                    password_dialog.open = False
+                    page.update()
+                    
+                    # Show success message
+                    success_dialog = ft.AlertDialog(
+                        modal=True,
+                        bgcolor="white",
+                        title=ft.Text("Success", color="black"),
+                        content=ft.Text("Password has been updated successfully!", color="black"),
+                        actions=[
+                            ft.TextButton("OK", style=ft.ButtonStyle(color="#002A7A"), on_click=lambda e: close_success_dialog(success_dialog))
+                        ],
+                    )
+                    page.overlay.append(success_dialog)
+                    success_dialog.open = True
+                    page.update()
+                else:
+                    new_password_field.error_text = "Failed to update password"
+                    page.update()
         
         def close_success_dialog(dialog):
             dialog.open = False
@@ -125,12 +189,22 @@ def SettingsView(page: ft.Page):
             content=ft.Container(
                 content=ft.Column(
                     controls=[
-                        current_password_field,
                         new_password_field,
+                        ft.Container(
+                            content=ft.Column(
+                                controls=[
+                                    rule_length,
+                                    rule_uppercase,
+                                    rule_special,
+                                ],
+                                spacing=5
+                            ),
+                            padding=ft.padding.only(left=10, top=5, bottom=10)
+                        ),
                         retype_password_field,
                     ],
                     tight=True,
-                    spacing=15
+                    spacing=10
                 ),
                 width=400,
                 padding=20
@@ -241,13 +315,13 @@ def SettingsView(page: ft.Page):
                                     ft.Column(
                                         controls=[
                                             ft.Text(
-                                                "JUAN DELA CRUZ",
+                                                user_data.get("name", "Guest").upper(),
                                                 size=22,
                                                 weight=ft.FontWeight.BOLD,
                                                 color="white"
                                             ),
                                             ft.Text(
-                                                "Student",
+                                                user_data.get("role", "Unknown"),
                                                 size=16,
                                                 color="white70"
                                             ),

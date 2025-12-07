@@ -1,26 +1,218 @@
 import flet as ft
+import json
+import os
+import sys
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from ar_navigation.routing import get_route
 
 def HomeView(page: ft.Page):
-    # State for search text
+    # Load places from places_cache.json
+    places_file = os.path.join(os.path.dirname(__file__), "..", "places_cache.json")
+    with open(places_file, 'r') as f:
+        PLACES = json.load(f)
+    
+    # Load search history
+    history_file = os.path.join(os.path.dirname(__file__), "..", "search_history.json")
+    try:
+        with open(history_file, 'r') as f:
+            content = f.read().strip()
+            search_history = json.loads(content) if content else []
+    except (FileNotFoundError, json.JSONDecodeError):
+        search_history = []
+        # Create empty history file if it doesn't exist
+        try:
+            with open(history_file, 'w') as f:
+                json.dump([], f)
+        except Exception:
+            pass
+    
+    # State for search text and selected destination
     search_query = ft.Ref[ft.TextField]()
+    suggestions_list = ft.Ref[ft.Column]()
+    ar_section = ft.Ref[ft.Container]()
+    searched_place_text = ft.Ref[ft.Text]()
+    recent_section = ft.Ref[ft.Container]()
+    recent_list = ft.Ref[ft.Column]()
+    
+    selected_destination = {"name": None, "coords": None}
+    
+    def on_search_change(e):
+        query = e.control.value.strip().lower()
+        
+        # When search is cleared, hide AR section and show recent section
+        if not query:
+            recent_section.current.visible = True
+            ar_section.current.visible = False
+            suggestions_list.current.visible = False
+            # Clear selected destination
+            selected_destination["name"] = None
+            selected_destination["coords"] = None
+        else:
+            # When typing, hide recent section
+            recent_section.current.visible = False
+        
+        update_suggestions(query)
+    
+    def update_suggestions(query):
+        suggestions_list.current.controls.clear()
+        
+        if not query:
+            suggestions_list.current.visible = False
+            page.update()
+            return
+        
+        # Filter places that match the query
+        matching_places = [name for name in PLACES.keys() if query in name.lower()]
+        
+        if matching_places:
+            suggestions_list.current.visible = True
+            # Hide AR section when showing suggestions
+            ar_section.current.visible = False
+            
+            for place_name in matching_places[:10]:  # Show max 10 suggestions
+                suggestions_list.current.controls.append(
+                    ft.Container(
+                        content=ft.Text(place_name, color="white", size=14),
+                        bgcolor="#80000000",
+                        padding=10,
+                        border_radius=5,
+                        on_click=lambda e, name=place_name: select_place(name)
+                    )
+                )
+        else:
+            suggestions_list.current.visible = False
+        
+        page.update()
+    
+    def save_to_history(place_name):
+        """Save search to history (max 5 entries)"""
+        from datetime import datetime
+        
+        # Remove if already exists
+        search_history[:] = [item for item in search_history if item["name"] != place_name]
+        
+        # Add to beginning
+        search_history.insert(0, {
+            "name": place_name,
+            "timestamp": datetime.now().isoformat()
+        })
+        
+        # Keep only last 5
+        if len(search_history) > 5:
+            search_history[:] = search_history[:5]
+        
+        # Save to file
+        try:
+            with open(history_file, 'w') as f:
+                json.dump(search_history, f, indent=2)
+        except Exception as e:
+            print(f"Error saving history: {e}")
+        
+        # Update the recent list display
+        populate_recent_searches()
+    
+    def select_place(place_name):
+        # Set the selected destination
+        selected_destination["name"] = place_name
+        selected_destination["coords"] = PLACES[place_name]
+        
+        # Save to history
+        save_to_history(place_name)
+        
+        # Update search field
+        search_query.current.value = place_name
+        
+        # Hide suggestions and recent section
+        suggestions_list.current.visible = False
+        recent_section.current.visible = False
+        
+        # Update searched place text
+        searched_place_text.current.value = place_name
+        
+        # Show AR section
+        ar_section.current.visible = True
+        
+        page.update()
     
     def on_search_click(e):
-        query = search_query.current.value
-        if query:
-            # Handle search logic here
-            print(f"Searching for: {query}")
+        query = search_query.current.value.strip()
+        if query and query in PLACES:
+            select_place(query)
+    
+    def populate_recent_searches():
+        """Populate the recent searches list"""
+        recent_list.current.controls.clear()
+        
+        if not search_history:
+            recent_list.current.controls.append(
+                ft.Text(
+                    "No recent visits",
+                    color="white70",
+                    size=14,
+                    italic=True,
+                    text_align=ft.TextAlign.CENTER
+                )
+            )
+        else:
+            for item in search_history:
+                place_name = item["name"]
+                recent_list.current.controls.append(
+                    ft.Container(
+                        content=ft.Row(
+                            controls=[
+                                ft.Icon(
+                                    ft.Icons.LOCATION_ON,
+                                    color="white",
+                                    size=16
+                                ),
+                                ft.Text(
+                                    place_name,
+                                    color="white",
+                                    size=14
+                                )
+                            ],
+                            spacing=8
+                        ),
+                        bgcolor="#80000000",
+                        padding=10,
+                        border_radius=5,
+                        on_click=lambda e, name=place_name: select_place(name)
+                    )
+                )
+        
+        page.update()
     
     def on_profile_click(e):
         # Navigate to profile/settings
         page.go("/settings")
     
-    def on_location_toggle(e):
-        # Switch between My Location and College of Computer Studies
-        print("Location toggled")
-    
     def on_ar_mode_click(e):
-        # Open AR mode
-        print("AR Mode activated")
+        # Start AR navigation
+        if not selected_destination["name"] or not selected_destination["coords"]:
+            page.snack_bar = ft.SnackBar(ft.Text("Please select a destination first"))
+            page.snack_bar.open = True
+            page.update()
+            return
+        
+        # Get user location
+        try:
+            loc = page.geolocator.get_geolocation()
+            user_lat = loc.latitude
+            user_lon = loc.longitude
+        except Exception:
+            # Fallback location (CSPC campus)
+            user_lat, user_lon = 13.405569, 123.374683
+        
+        # Compute route
+        dest_coords = selected_destination["coords"]
+        route = get_route((user_lat, user_lon), dest_coords)
+        
+        # Save route to session and navigate to AR view
+        page.session.set("current_route", route)
+        page.go("/ar")
     
     return ft.View(
         "/home",
@@ -51,41 +243,65 @@ def HomeView(page: ft.Page):
                             padding=ft.padding.only(top=50, left=80, right=20, bottom=5)
                         ),
                         
-                        ft.Container(height=10),  # Spacer between header and search
+                        # Greeting Text
+                        ft.Container(
+                            content=ft.Text(
+                                "Hello, User!",
+                                color="white",
+                                size=20,
+                                weight=ft.FontWeight.BOLD,
+                                text_align=ft.TextAlign.LEFT
+                            ),
+                            padding=ft.padding.only(left=25, right=20, top=10, bottom=20)
+                        ),
                         
                         # Search Bar
                         ft.Container(
-                            content=ft.Row(
+                            content=ft.Column(
                                 controls=[
-                                    ft.TextField(
-                                        ref=search_query,
-                                        hint_text="Where are you going?",
-                                        hint_style=ft.TextStyle(color="white70"),
-                                        text_style=ft.TextStyle(color="white"),
-                                        border_radius=25,
-                                        filled=True,
-                                        bgcolor="#80000000",
-                                        border_color="transparent",
-                                        focused_border_color="transparent",
-                                        content_padding=ft.padding.symmetric(horizontal=20, vertical=15),
-                                        text_vertical_align=ft.VerticalAlignment.CENTER,
-                                        expand=True,
+                                    ft.Row(
+                                        controls=[
+                                            ft.TextField(
+                                                ref=search_query,
+                                                hint_text="Where are you going?",
+                                                hint_style=ft.TextStyle(color="white70"),
+                                                text_style=ft.TextStyle(color="white"),
+                                                border_radius=25,
+                                                filled=True,
+                                                bgcolor="#80000000",
+                                                border_color="transparent",
+                                                focused_border_color="transparent",
+                                                content_padding=ft.padding.symmetric(horizontal=20, vertical=15),
+                                                text_vertical_align=ft.VerticalAlignment.CENTER,
+                                                expand=True,
+                                                on_change=on_search_change,
+                                            ),
+                                            ft.IconButton(
+                                                icon=ft.Icons.SEARCH,
+                                                icon_color="white",
+                                                icon_size=28,
+                                                on_click=on_search_click
+                                            )
+                                        ],
+                                        spacing=10,
+                                        vertical_alignment=ft.CrossAxisAlignment.CENTER
                                     ),
-                                    ft.IconButton(
-                                        icon=ft.Icons.SEARCH,
-                                        icon_color="white",
-                                        icon_size=28,
-                                        on_click=on_search_click
+                                    # Suggestions list
+                                    ft.Column(
+                                        ref=suggestions_list,
+                                        controls=[],
+                                        spacing=5,
+                                        visible=False
                                     )
                                 ],
-                                spacing=10,
-                                vertical_alignment=ft.CrossAxisAlignment.CENTER
+                                spacing=10
                             ),
                             padding=ft.padding.symmetric(horizontal=20, vertical=10)
                         ),
                         
                         # Recent Section (Hidden)
                         ft.Container(
+                            ref=recent_section,
                             content=ft.Column(
                                 controls=[
                                     ft.Row(
@@ -106,18 +322,16 @@ def HomeView(page: ft.Page):
                                         alignment=ft.MainAxisAlignment.CENTER
                                     ),
                                     ft.Divider(color="white30", height=20),
-                                    ft.Text(
-                                        "No recent visits",
-                                        color="white70",
-                                        size=14,
-                                        italic=True,
-                                        text_align=ft.TextAlign.CENTER
+                                    ft.Column(
+                                        ref=recent_list,
+                                        controls=[],
+                                        spacing=8
                                     )
                                 ],
                                 spacing=10,
                                 horizontal_alignment=ft.CrossAxisAlignment.CENTER
                             ),
-                            padding=ft.padding.symmetric(horizontal=30, vertical=20),
+            padding=ft.padding.symmetric(horizontal=30, vertical=20),
                             visible=True
                         ),
                         
@@ -126,6 +340,7 @@ def HomeView(page: ft.Page):
                         
                         # Location Toggle and AR Mode Section (Centered)
                         ft.Container(
+                            ref=ar_section,
                             content=ft.Column(
                                 controls=[
                                     # Location Toggle
@@ -150,7 +365,8 @@ def HomeView(page: ft.Page):
                                                 ),
                                                 ft.Container(
                                                     content=ft.Text(
-                                                        "College of\nComputer Studies",
+                                                        ref=searched_place_text,
+                                                        value="Searched Place",
                                                         color="white",
                                                         size=12,
                                                         weight=ft.FontWeight.BOLD,
@@ -203,3 +419,8 @@ def HomeView(page: ft.Page):
         padding=0,
         bgcolor="#002A7A"
     )
+    
+    # Populate recent searches on load
+    populate_recent_searches()
+    
+    return view
