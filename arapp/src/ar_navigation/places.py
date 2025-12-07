@@ -3,7 +3,7 @@ import osmnx as ox
 import json
 import os
 
-CACHE = "places_cache.json"
+CACHE = "cache/places_cache.json"
 
 def build_places(place_name="Camarines Sur Polytechnic Colleges"):
     # try cache
