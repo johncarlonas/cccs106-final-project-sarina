@@ -2,17 +2,24 @@ import flet as ft
 import time
 import threading
 import os
-from src.ui.opening import OpeningView
-from src.ui.new_user import NewUserView
-from src.ui.user_selection import UserSelectionView
-from src.ui.login_signup import LoginSignupView
-from src.ui.email_verification import EmailVerificationView
-from src.ui.forgot_password import ForgotPasswordView
-from src.ui.home import HomeView
-from src.ui.settings import SettingsView
-from src.ui.ar_view import ARView
-from src.admin_ui.dashboard import DashboardView
-from src.utils.auth_middleware import check_route_access
+import sys
+
+# Add src directory to path for both development and production
+src_path = os.path.join(os.path.dirname(__file__), 'src')
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
+
+from ui.opening import OpeningView
+from ui.new_user import NewUserView
+from ui.user_selection import UserSelectionView
+from ui.login_signup import LoginSignupView
+from ui.email_verification import EmailVerificationView
+from ui.forgot_password import ForgotPasswordView
+from ui.home import HomeView
+from ui.settings import SettingsView
+from ui.ar_view import ARView
+from admin_ui.dashboard import DashboardView
+from utils.auth_middleware import check_route_access
 
 def main(page: ft.Page):
     page.title = "SARI NA"
