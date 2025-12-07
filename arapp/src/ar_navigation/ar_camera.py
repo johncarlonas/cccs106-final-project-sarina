@@ -62,7 +62,7 @@ def _overlay_perspective_arrow(frame, arrow_rgba, angle_deg, scale=1.0):
     return frame
 
 def generate_frames(route_points, frame_callback, get_user_location_func, get_user_heading_func, stop_flag):
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
     if not cap.isOpened():
         raise RuntimeError("Camera not available")
 
