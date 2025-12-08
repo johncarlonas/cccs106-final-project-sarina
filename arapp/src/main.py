@@ -49,9 +49,6 @@ def main(page: ft.Page):
     page.window.center()
     page.window_resizable = False
     
-    # TEMPORARY: Reset client storage for testing - REMOVE THIS AFTER TESTING
-    page.client_storage.clear()
-    
     # Check app state
     def check_first_launch():
         """Check if this is the first launch of the app"""
