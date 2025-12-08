@@ -4,22 +4,42 @@ import threading
 import os
 import sys
 
-# Add src directory to path for both development and production
-src_path = os.path.join(os.path.dirname(__file__), 'src')
-if src_path not in sys.path:
-    sys.path.insert(0, src_path)
+# Fix imports for APK - add multiple possible src locations to path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+src_path = os.path.join(current_dir, 'src')
+parent_dir = os.path.dirname(current_dir)
+parent_src = os.path.join(parent_dir, 'src')
 
-from ui.opening import OpeningView
-from ui.new_user import NewUserView
-from ui.user_selection import UserSelectionView
-from ui.login_signup import LoginSignupView
-from ui.email_verification import EmailVerificationView
-from ui.forgot_password import ForgotPasswordView
-from ui.home import HomeView
-from ui.settings import SettingsView
-from ui.ar_view import ARView
-from admin_ui.dashboard import DashboardView
-from utils.auth_middleware import check_route_access
+for path in [src_path, current_dir, parent_src, parent_dir]:
+    if path not in sys.path:
+        sys.path.insert(0, path)
+
+# Try different import styles for APK compatibility
+try:
+    from ui.opening import OpeningView
+    from ui.new_user import NewUserView
+    from ui.user_selection import UserSelectionView
+    from ui.login_signup import LoginSignupView
+    from ui.email_verification import EmailVerificationView
+    from ui.forgot_password import ForgotPasswordView
+    from ui.home import HomeView
+    from ui.settings import SettingsView
+    from ui.ar_view import ARView
+    from admin_ui.dashboard import DashboardView
+    from utils.auth_middleware import check_route_access
+except ModuleNotFoundError:
+    # Fallback for development/desktop
+    from src.ui.opening import OpeningView
+    from src.ui.new_user import NewUserView
+    from src.ui.user_selection import UserSelectionView
+    from src.ui.login_signup import LoginSignupView
+    from src.ui.email_verification import EmailVerificationView
+    from src.ui.forgot_password import ForgotPasswordView
+    from src.ui.home import HomeView
+    from src.ui.settings import SettingsView
+    from src.ui.ar_view import ARView
+    from src.admin_ui.dashboard import DashboardView
+    from src.utils.auth_middleware import check_route_access
 
 def main(page: ft.Page):
     page.title = "SARI NA"
