@@ -10,7 +10,7 @@ from math import sqrt
 
 # path to arrow PNG - use absolute path based on this file's location
 _current_dir = os.path.dirname(os.path.abspath(__file__))
-ARROW_PATH = os.path.join(_current_dir, "..", "..", "assets", "arrow.png")
+ARROW_PATH = os.path.join(_current_dir, "..", "assets", "arrow.png")
 
 # if arrow not found error
 _arrow_img = cv2.imread(ARROW_PATH, cv2.IMREAD_UNCHANGED)

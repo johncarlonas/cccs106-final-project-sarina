@@ -5,6 +5,10 @@ import re
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from database.db import update_user_password
 
 def SettingsView(page: ft.Page):

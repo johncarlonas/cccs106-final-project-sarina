@@ -3,6 +3,10 @@ Login Protection System
 Prevents credential stuffing attacks through rate limiting and account lockout
 """
 from datetime import datetime, timedelta, timezone
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from database.db import supabase
 
 class LoginProtection:

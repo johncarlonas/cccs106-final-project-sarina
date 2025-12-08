@@ -6,6 +6,10 @@ import re
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from database.db import check_user_exists, verify_user_login, supabase
 from utils.login_protection import LoginProtection
 

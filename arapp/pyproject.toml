@@ -26,6 +26,10 @@ company = "Werna"
 # copyright text to display in about app dialogs
 copyright = "Copyright (C) 2025 by Flet"
 
+[tool.flet.app]
+path = "src"
+assets_dir = "src/assets"
+
 [tool.uv]
 dev-dependencies = [
     "flet[all]==0.28.3",
