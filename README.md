@@ -255,7 +255,28 @@ The app uses mathematical models for:
 
 ---
 
-## 6. Installation and Setup
+## 6. Security Features
+
+### 6.1 Security Features Table
+
+| Feature                                | Description                                                             | Status         |
+| -------------------------------------- | ----------------------------------------------------------------------- | -------------- |
+| User Authentication                    | Secure login/logout with email/password validation, session clearing    | ✅ Implemented |
+| Password Hashing                       | Using bcrypt for password hashing on signup, verification, reset/change | ✅ Implemented |
+| Protection against Credential Stuffing | 5-minute lockout after failed attempts                                  | ✅ Implemented |
+| Role-Based Access Control (RBAC)       | Admin, CSPCean, Visitor roles with UI and server-side enforcement       | ✅ Implemented |
+| User Management (Admin only)           | List, delete, create users with roles                                   | ✅ Implemented |
+| Profile Management                     | View and change password with rules                                     | ✅ Implemented |
+| Data Layer                             | Supabase PostgreSQL database                                            | ✅ Implemented |
+| Secure Configuration                   | Secrets in .env file, not hard-coded, .env.example provided             | ✅ Implemented |
+| Two-Factor Authentication              | Email OTP support                                                | ✅ Implemented |
+| User Activity Monitoring               | Tracking last login and failed attempts                                 | ✅ Implemented |
+| Reporting & Analytics                  | Charts for usage and role distribution (admin dashboard)                | ✅ Implemented |
+| Secure Password Reset                  | Signed time-bound token email flow (forgot password and settings)       | ✅ Implemented |
+
+---
+
+## 7. Installation and Setup
 
 ### 6.1 Prerequisites
 
@@ -333,7 +354,7 @@ flet build apk
 
 ---
 
-## 7. Testing Summary
+## 8. Testing Summary
 
 ### 7.1 Test Suite Overview
 
@@ -381,7 +402,7 @@ python test/test_functionality.py
 
 ---
 
-## 8. Team Roles
+## 9. Team Roles
 
 | Member                         | Role                                 | Responsibilities                                                           |
 | ------------------------------ | ------------------------------------ | -------------------------------------------------------------------------- |
@@ -391,7 +412,7 @@ python test/test_functionality.py
 
 ---
 
-## 9. Risks and Constraints
+## 10. Risks and Constraints
 
 ### 9.1 Technical Constraints
 
@@ -418,7 +439,7 @@ python test/test_functionality.py
 
 ---
 
-## 10. Future Enhancements
+## 11. Future Enhancements
 
 ### 10.1 Short-Term Improvements
 
@@ -444,7 +465,7 @@ python test/test_functionality.py
 
 ---
 
-## 11. Conclusion
+## 12. Conclusion
 
 **SARI NA?** successfully addresses the navigation challenges faced by new students at CSPC by combining modern technologies (Flet, AR simulation, cloud database, secure authentication) into a user-friendly cross-platform application.
 
@@ -460,7 +481,7 @@ While the current implementation has limitations (simulated AR, no real GPS), it
 
 ---
 
-## 12. References
+## 13. References
 
 - **Flet Documentation:** https://flet.dev/docs
 - **Supabase Documentation:** https://supabase.com/docs
@@ -478,7 +499,7 @@ While the current implementation has limitations (simulated AR, no real GPS), it
 
 ---
 
-## 13. Individual Reflections
+## 14. Individual Reflections
 
 ### Malanon, Remar F.
 
