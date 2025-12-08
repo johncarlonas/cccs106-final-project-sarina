@@ -1,0 +1,19 @@
+[app]
+# Set your application's basic metadata
+name = "SARI NA" 
+version = "1.0.0"
+# Set the entry point of your application
+module = "src.main" 
+# Set the desired theme mode
+theme_mode = "light"
+
+# This section tells the Flet builder to explicitly include these folders.
+assets = [
+    # Include the main application packages
+    "src/ui/",
+    "src/utils/",
+    "src/admin_ui/",
+    "src/database/",
+    "src/cache/",
+    "src/assets/",
+]
