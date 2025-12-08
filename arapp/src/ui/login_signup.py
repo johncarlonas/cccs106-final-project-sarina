@@ -6,7 +6,12 @@ import re
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from database.db import check_user_exists, verify_user_login, supabase
+from utils.login_protection import LoginProtection
 
 def LoginSignupView(page: ft.Page):
     # Set theme for password reveal icon color
@@ -144,14 +149,14 @@ def LoginSignupView(page: ft.Page):
         page.go("/email_verification")
     
     def on_login_click(e):
-        """Handle login button click"""
+        """Handle login button click with protection against credential stuffing"""
         # Clear previous errors
         login_email_error.current.value = ""
         login_email_error.current.visible = False
         login_password_error.current.value = ""
         login_password_error.current.visible = False
         
-        email = login_email.value.strip()
+        email = login_email.value.strip().lower()
         password = login_password.value
         
         # Validate inputs
@@ -168,14 +173,46 @@ def LoginSignupView(page: ft.Page):
             page.update()
             return
         
-        # Verify password
-        if not verify_user_login(email, password):
-            login_password_error.current.value = "Incorrect password"
+        # Check if account is locked
+        is_locked, remaining_time = LoginProtection.check_if_locked(email)
+        if is_locked:
+            login_email_error.current.value = f"Account locked due to multiple failed attempts. Try again in {remaining_time}."
+            login_email_error.current.visible = True
+            page.update()
+            return
+        
+        # Check rate limit (temporary cooldown)
+        is_limited, remaining_time = LoginProtection.check_rate_limit(email)
+        if is_limited:
+            remaining = LoginProtection.get_remaining_attempts(email)
+            login_password_error.current.value = f"Slow down! Please wait {remaining_time} before trying again. ({remaining} attempts left before lockout)"
             login_password_error.current.visible = True
             page.update()
             return
         
-        # Login successful - save to client storage
+        # Verify password
+        if not verify_user_login(email, password):
+            # Record failed attempt
+            was_locked = LoginProtection.record_failed_attempt(email)
+            
+            if was_locked:
+                login_password_error.current.value = "Account locked for 30 minutes due to too many failed attempts."
+                login_password_error.current.visible = True
+            else:
+                remaining = LoginProtection.get_remaining_attempts(email)
+                if remaining <= 3:
+                    login_password_error.current.value = f"⚠️ Incorrect password. Only {remaining} attempts left before 30-minute lockout!"
+                else:
+                    login_password_error.current.value = f"Incorrect password. {remaining} attempts remaining."
+            
+            login_password_error.current.visible = True
+            page.update()
+            return
+        
+        # Login successful - reset failed attempts counter
+        LoginProtection.reset_attempts(email)
+        
+        # Save to client storage
         page.client_storage.set("logged_in_user", email)
         page.client_storage.set("first_launch", False)
         page.session.set("user_email", email)

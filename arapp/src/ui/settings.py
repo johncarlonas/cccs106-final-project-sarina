@@ -5,6 +5,10 @@ import re
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from database.db import update_user_password
 
 def SettingsView(page: ft.Page):
@@ -60,7 +64,7 @@ def SettingsView(page: ft.Page):
         page.update()
     
     def show_change_password_dialog(e):
-        """Show change password dialog with rules"""
+        """Show change password dialog with current password verification"""
         # Password rules refs
         rule_length = ft.Text(
             "• Minimum 8 characters",
@@ -102,6 +106,15 @@ def SettingsView(page: ft.Page):
             
             page.update()
         
+        current_password_field = ft.TextField(
+            label="Current Password",
+            password=True,
+            can_reveal_password=True,
+            border_color="#002A7A",
+            label_style=ft.TextStyle(color="black"),
+            text_style=ft.TextStyle(color="black"),
+        )
+        
         new_password_field = ft.TextField(
             ref=new_password,
             label="New Password",
@@ -113,9 +126,9 @@ def SettingsView(page: ft.Page):
             on_change=on_password_change
         )
         
-        retype_password_field = ft.TextField(
+        confirm_password_field = ft.TextField(
             ref=retype_password,
-            label="Re-type New Password",
+            label="Confirm Password",
             password=True,
             can_reveal_password=True,
             border_color="#002A7A",
@@ -124,11 +137,34 @@ def SettingsView(page: ft.Page):
         )
         
         def validate_and_change_password(e):
+            from utils.password_hashing import PasswordHasher
+            
             # Clear previous errors
+            current_password_field.error_text = None
             new_password_field.error_text = None
-            retype_password_field.error_text = None
+            confirm_password_field.error_text = None
             
             is_valid = True
+            
+            # Validate current password
+            if not current_password_field.value:
+                current_password_field.error_text = "This field is required"
+                is_valid = False
+            else:
+                # Verify current password is correct
+                try:
+                    response = supabase.table("users").select("password").eq("email", user_email).execute()
+                    if response.data and len(response.data) > 0:
+                        stored_password = response.data[0]["password"]
+                        if not PasswordHasher.verify_password(current_password_field.value, stored_password):
+                            current_password_field.error_text = "Current password is incorrect"
+                            is_valid = False
+                    else:
+                        current_password_field.error_text = "User not found"
+                        is_valid = False
+                except Exception as ex:
+                    current_password_field.error_text = "Error verifying password"
+                    is_valid = False
             
             # Validate new password
             if not new_password_field.value:
@@ -141,12 +177,12 @@ def SettingsView(page: ft.Page):
                     new_password_field.error_text = "Password must meet all requirements"
                     is_valid = False
             
-            # Validate retype password
-            if not retype_password_field.value:
-                retype_password_field.error_text = "This field is required"
+            # Validate confirm password
+            if not confirm_password_field.value:
+                confirm_password_field.error_text = "This field is required"
                 is_valid = False
-            elif new_password_field.value and retype_password_field.value != new_password_field.value:
-                retype_password_field.error_text = "Passwords do not match"
+            elif new_password_field.value and confirm_password_field.value != new_password_field.value:
+                confirm_password_field.error_text = "Passwords do not match"
                 is_valid = False
             
             page.update()
@@ -189,6 +225,7 @@ def SettingsView(page: ft.Page):
             content=ft.Container(
                 content=ft.Column(
                     controls=[
+                        current_password_field,
                         new_password_field,
                         ft.Container(
                             content=ft.Column(
@@ -201,7 +238,7 @@ def SettingsView(page: ft.Page):
                             ),
                             padding=ft.padding.only(left=10, top=5, bottom=10)
                         ),
-                        retype_password_field,
+                        confirm_password_field,
                     ],
                     tight=True,
                     spacing=10
@@ -218,6 +255,106 @@ def SettingsView(page: ft.Page):
         page.overlay.append(password_dialog)
         password_dialog.open = True
         page.update()
+    
+    def show_edit_profile_dialog(e):
+        """Show edit profile dialog"""
+        full_name_field = ft.TextField(
+            label="Full Name",
+            value=user_data.get("name", ""),
+            border_color="#002A7A",
+            label_style=ft.TextStyle(color="black"),
+            text_style=ft.TextStyle(color="black"),
+        )
+        
+        email_field = ft.TextField(
+            label="Email",
+            value=user_email,
+            border_color="#002A7A",
+            label_style=ft.TextStyle(color="black"),
+            text_style=ft.TextStyle(color="black"),
+            read_only=True,
+            disabled=True,
+        )
+        
+        def validate_and_update_profile(e):
+            # Clear previous errors
+            full_name_field.error_text = None
+            
+            is_valid = True
+            
+            # Validate full name
+            if not full_name_field.value or not full_name_field.value.strip():
+                full_name_field.error_text = "Full name cannot be blank"
+                is_valid = False
+            
+            page.update()
+            
+            if is_valid:
+                # Update profile in database
+                try:
+                    supabase.table("users").update({
+                        "name": full_name_field.value.strip()
+                    }).eq("email", user_email).execute()
+                    
+                    # Update local user_data
+                    user_data["name"] = full_name_field.value.strip()
+                    
+                    profile_dialog.open = False
+                    page.update()
+                    
+                    # Show success message
+                    success_dialog = ft.AlertDialog(
+                        modal=True,
+                        bgcolor="white",
+                        title=ft.Text("Success", color="black"),
+                        content=ft.Text("Profile has been updated successfully!", color="black"),
+                        actions=[
+                            ft.TextButton("OK", style=ft.ButtonStyle(color="#002A7A"), on_click=lambda e: close_success_dialog(success_dialog))
+                        ],
+                    )
+                    page.overlay.append(success_dialog)
+                    success_dialog.open = True
+                    page.update()
+                except Exception as ex:
+                    full_name_field.error_text = f"Failed to update profile: {str(ex)}"
+                    page.update()
+        
+        def close_success_dialog(dialog):
+            dialog.open = False
+            page.update()
+            # Refresh the page to show updated name
+            page.go("/settings")
+        
+        def close_profile_dialog(e):
+            profile_dialog.open = False
+            page.update()
+        
+        profile_dialog = ft.AlertDialog(
+            modal=True,
+            bgcolor="white",
+            title=ft.Text("Edit Profile", color="black"),
+            content=ft.Container(
+                content=ft.Column(
+                    controls=[
+                        full_name_field,
+                        email_field,
+                    ],
+                    tight=True,
+                    spacing=15
+                ),
+                width=400,
+                padding=20
+            ),
+            actions=[
+                ft.TextButton("Cancel", style=ft.ButtonStyle(color="#002A7A"), on_click=close_profile_dialog),
+                ft.TextButton("Save", style=ft.ButtonStyle(color="#002A7A"), on_click=validate_and_update_profile),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        page.overlay.append(profile_dialog)
+        profile_dialog.open = True
+        page.update()
+    
     def show_about_dialog(e):
         """Show about dialog with app information"""
         about_dialog = ft.AlertDialog(
@@ -360,6 +497,28 @@ def SettingsView(page: ft.Page):
                                             spacing=15
                                         ),
                                         on_click=show_about_dialog,
+                                        padding=15,
+                                        ink=True
+                                    ),
+                                    
+                                    # Edit Profile
+                                    ft.Container(
+                                        content=ft.Row(
+                                            controls=[
+                                                ft.Icon(
+                                                    ft.Icons.EDIT,
+                                                    color="white",
+                                                    size=24
+                                                ),
+                                                ft.Text(
+                                                    "Edit Profile",
+                                                    color="white",
+                                                    size=18
+                                                )
+                                            ],
+                                            spacing=15
+                                        ),
+                                        on_click=show_edit_profile_dialog,
                                         padding=15,
                                         ink=True
                                     ),
