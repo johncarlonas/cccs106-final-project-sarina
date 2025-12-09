@@ -71,7 +71,7 @@ def generate_frames(route_points, frame_callback, get_user_location_func, get_us
     cap = None
     
     # Try camera indices 0, 1, 2 to find any available camera
-    for camera_index in [0, 1, 2]:
+    for camera_index in [1, 2]:
         cap = cv2.VideoCapture(camera_index, cv2.CAP_DSHOW)  # Use DirectShow on Windows
         if cap.isOpened():
             # Test if we can actually read a frame
@@ -89,7 +89,7 @@ def generate_frames(route_points, frame_callback, get_user_location_func, get_us
     
     # If DirectShow failed, try without it
     if cap is None or not cap.isOpened():
-        for camera_index in [0, 1, 2]:
+        for camera_index in [1, 2]:
             cap = cv2.VideoCapture(camera_index)
             if cap.isOpened():
                 ret, test_frame = cap.read()

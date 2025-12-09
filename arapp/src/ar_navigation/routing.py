@@ -1,10 +1,16 @@
 
+import os
 import openrouteservice
 from openrouteservice import convert
 from simplification.cutil import simplify_coords
+from dotenv import load_dotenv
+
+load_dotenv()
+
+ORS_KEY = os.getenv("ORS_KEY")
 
 # ors api key
-client = openrouteservice.Client(key="ORS_KEY")
+client = openrouteservice.Client(key=ORS_KEY)
 
 def get_route(start, end, simplify_tol=0.00005):
     # (lat, lon)
