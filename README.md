@@ -262,9 +262,9 @@ The app uses mathematical models for:
 | Capability               | CSPCean | Visitor | Admin |
 | ------------------------ | ------- | ------- | ----- |
 | User Authentication      | ✅      | ✅      | ✅    |
-| View Home Page           | ✅      | ✅      | ✅    |
-| Search Campus Locations  | ✅      | ✅      | ✅    |
-| AR Navigation            | ✅      | ✅      | ✅    |
+| View Home Page           | ✅      | ✅      | ❌    |
+| Search Campus Locations  | ✅      | ✅      | ❌    |
+| AR Navigation            | ✅      | ✅      | ❌    |
 | Change Password          | ✅      | ✅      | ✅    |
 | View Profile             | ✅      | ✅      | ✅    |
 | Admin Dashboard          | ❌      | ❌      | ✅    |
@@ -392,7 +392,6 @@ The project includes a comprehensive test suite (`test_functionality.py`) with *
 - ✅ Email & OTP verification
 - ✅ Error handling (email validation, password complexity)
 - ✅ Search functionality
-- ✅ APK build compatibility checks
 
 ### 9.2 How to Run Tests
 
@@ -424,11 +423,11 @@ python test/test_functionality.py
 
 ## 10. Team Roles
 
-| Member                         | Role                                 | Responsibilities                                                           |
-| ------------------------------ | ------------------------------------ | -------------------------------------------------------------------------- |
-| **Nas, John Carlo E.**         | Full Stack Developer/Project Manager | UI/UX design, database design, authentication system, project coordination |
-| **Montenegro, John Renzzo C.** | AR/Navigation Developer              | AR overlay rendering, navigation algorithms, route calculation             |
-| **Malanon, Remar F.**          | QA Tester and Documentation Manager  | Testing and quality assurance, documentation writing, project reporting    |
+| Member                         | Role                                   | Responsibilities                                                           |
+| ------------------------------ | -------------------------------------- | -------------------------------------------------------------------------- |
+| **Nas, John Carlo E.**         | Full Stack Developer / Project Manager | UI/UX design, database design, authentication system, project coordination |
+| **Montenegro, John Renzzo C.** | AR/Navigation Developer                | AR overlay rendering, navigation algorithms, route calculation             |
+| **Malanon, Remar F.**          | QA Tester and Documentation Manager    | Testing and quality assurance, documentation writing, project reporting    |
 
 ---
 
