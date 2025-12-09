@@ -4,7 +4,7 @@ from openrouteservice import convert
 from simplification.cutil import simplify_coords
 
 # ors api key
-client = openrouteservice.Client(key="eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImMxNjFhOGFhYmFmMzRlZDhiODQ5NTYwMDU5MDZhZjA4IiwiaCI6Im11cm11cjY0In0=")
+client = openrouteservice.Client(key="ORS_KEY")
 
 def get_route(start, end, simplify_tol=0.00005):
     # (lat, lon)
