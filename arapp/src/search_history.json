@@ -1,22 +1,22 @@
 [
   {
-    "name": "CCS",
-    "timestamp": "2025-12-09T14:50:56.403712"
-  },
-  {
     "name": "Academic Building 1",
-    "timestamp": "2025-12-09T13:52:51.975094"
-  },
-  {
-    "name": "CSPC Auditorium",
-    "timestamp": "2025-12-09T13:51:35.863467"
-  },
-  {
-    "name": "Gymnasium",
-    "timestamp": "2025-12-09T13:49:52.328059"
+    "timestamp": "2025-12-09T18:06:37.452782"
   },
   {
     "name": "CSPC Chapel",
-    "timestamp": "2025-12-09T13:39:45.461592"
+    "timestamp": "2025-12-09T17:35:30.159934"
+  },
+  {
+    "name": "CAS",
+    "timestamp": "2025-12-09T17:35:22.344229"
+  },
+  {
+    "name": "Gymnasium",
+    "timestamp": "2025-12-09T17:32:41.742995"
+  },
+  {
+    "name": "CCS",
+    "timestamp": "2025-12-09T17:31:04.677552"
   }
 ]
