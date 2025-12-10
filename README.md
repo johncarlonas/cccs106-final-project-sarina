@@ -522,6 +522,14 @@ While the current implementation has limitations (simulated AR, no real GPS), it
 
 ### Malanon, Remar F.
 
+Working on this project has been a really rewarding experience. Being part of this project pushed me to think carefully about how everything in an app comes together and how small details can make a big difference. Throughout this project, I've learned so many things and faced challenges I had never encountered before. It also taught me a lot about navigating problems, particularly when dealing with the dependencies we used.
+
+One of the biggest challenges for me was working with Flet’s limitations from a testing perspective. Since some features, like AR simulation and mobile behaviors, didn’t always work consistently across platforms, I had to test carefully and think about how users might experience the app. It taught me to pay attention to small details, anticipate potential issues, and adapt my testing approach to make sure everything still worked as smoothly as possible.
+
+This project also showed me the value of teamwork. Even if my contributions weren’t as valuable as some of the development work, I focused on doing what I could, testing thoroughly, documenting carefully, and supporting the team wherever needed. Coordinating with my teammates, sharing observations, and seeing how our ideas came together as a team made the whole process enjoyable and fulfilling. Even when things got stressful, the experience of overcoming challenges and seeing the app function as intended was really motivating.
+
+Working on SARI NA? helped me grow a lot—not just technically, but also in patience, critical thinking, and understanding how much effort goes into creating a smooth, functional app. It was a challenging but very rewarding journey, and it has made me more confident in tackling complex projects in the future.
+
 ---
 
 ### Montenegro, John Renzzo C.
