@@ -2,11 +2,15 @@ import flet as ft
 import json
 import os
 import sys
+import threading
+import webbrowser
+import platform
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ar_navigation.routing import get_route
+from utils.map_generator import generate_route_map, save_map_html
 
 def HomeView(page: ft.Page):
     # Get current user from session/storage
@@ -48,11 +52,19 @@ def HomeView(page: ft.Page):
     search_query = ft.Ref[ft.TextField]()
     suggestions_list = ft.Ref[ft.Column]()
     ar_section = ft.Ref[ft.Container]()
+    map_display_container = ft.Ref[ft.Container]()
     searched_place_text = ft.Ref[ft.Text]()
     recent_section = ft.Ref[ft.Container]()
     recent_list = ft.Ref[ft.Column]()
+    location_info_text = ft.Ref[ft.Text]()
+    loading_indicator = ft.Ref[ft.ProgressRing]()
+    view_map_button = ft.Ref[ft.ElevatedButton]()
+    map_info_text = ft.Ref[ft.Text]()
     
     selected_destination = {"name": None, "coords": None}
+    current_location = {"lat": 13.405669, "lon": 123.377169}  # Default: CCS Building
+    current_route = None
+    map_file_path = None  # Store the path to the generated map
     
     def on_search_change(e):
         query = e.control.value.strip().lower()
@@ -138,19 +150,111 @@ def HomeView(page: ft.Page):
         save_to_history(place_name)
         
         # Update search field
-        search_query.current.value = place_name
+        if search_query.current is not None:
+            search_query.current.value = place_name
         
         # Hide suggestions and recent section
-        suggestions_list.current.visible = False
-        recent_section.current.visible = False
+        if suggestions_list.current is not None:
+            suggestions_list.current.visible = False
+        if recent_section.current is not None:
+            recent_section.current.visible = False
         
         # Update searched place text
-        searched_place_text.current.value = place_name
+        if searched_place_text.current is not None:
+            searched_place_text.current.value = place_name
         
-        # Show AR section
-        ar_section.current.visible = True
+        # Show loading indicator
+        if loading_indicator.current is not None:
+            loading_indicator.current.visible = True
+        if map_display_container.current is not None:
+            map_display_container.current.visible = False
+        
+        # Show AR section and map
+        if ar_section.current is not None:
+            ar_section.current.visible = True
         
         page.update()
+        
+        # Generate map in background thread
+        def generate_map():
+            try:
+                nonlocal map_file_path
+                
+                # Get current user location
+                try:
+                    loc = page.geolocator.get_geolocation()
+                    current_location["lat"] = loc.latitude
+                    current_location["lon"] = loc.longitude
+                except Exception:
+                    # Use default location if geolocation fails
+                    pass
+                
+                # Get route
+                nonlocal current_route
+                dest_coords = selected_destination["coords"]
+                current_route = get_route(
+                    (current_location["lat"], current_location["lon"]), 
+                    dest_coords
+                )
+                
+                # Generate map HTML
+                start_coords = (current_location["lat"], current_location["lon"])
+                end_coords = dest_coords
+                
+                html_content = generate_route_map(start_coords, end_coords, current_route)
+                map_file_path = save_map_html(html_content)
+                print(f"Map saved to: {map_file_path}")
+                print(f"File exists: {os.path.exists(map_file_path)}")
+                
+                # Update location info
+                if location_info_text.current is not None:
+                    location_info_text.current.value = f"My Location → {place_name}"
+                
+                # Update map info with coordinates
+                if map_info_text.current is not None:
+                    start_lat = current_location["lat"]
+                    start_lon = current_location["lon"]
+                    end_lat = end_coords[0]
+                    end_lon = end_coords[1]
+                    distance = calculate_distance(start_lat, start_lon, end_lat, end_lon)
+                    map_info_text.current.value = f"From ({start_lat:.4f}, {start_lon:.4f}) to ({end_lat:.4f}, {end_lon:.4f})\nDistance: {distance:.2f} km"
+                
+                # Hide loading and show map
+                if loading_indicator.current is not None:
+                    loading_indicator.current.visible = False
+                if map_display_container.current is not None:
+                    map_display_container.current.visible = True
+                
+                # Enable view map button
+                if view_map_button.current is not None:
+                    view_map_button.current.disabled = False
+                
+                page.update()
+                
+            except Exception as e:
+                print(f"Error generating map: {e}")
+                import traceback
+                traceback.print_exc()
+                if loading_indicator.current is not None:
+                    loading_indicator.current.visible = False
+                page.update()
+        
+        # Start map generation in background
+        thread = threading.Thread(target=generate_map, daemon=True)
+        thread.start()
+    
+    def calculate_distance(lat1, lon1, lat2, lon2):
+        """Calculate distance between two coordinates in km"""
+        import math
+        R = 6371  # Earth's radius in km
+        lat1_rad = math.radians(lat1)
+        lat2_rad = math.radians(lat2)
+        delta_lat = math.radians(lat2 - lat1)
+        delta_lon = math.radians(lon2 - lon1)
+        
+        a = math.sin(delta_lat/2) ** 2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon/2) ** 2
+        c = 2 * math.asin(math.sqrt(a))
+        return R * c
     
     def on_search_click(e):
         query = search_query.current.value.strip()
@@ -159,6 +263,10 @@ def HomeView(page: ft.Page):
     
     def populate_recent_searches():
         """Populate the recent searches list"""
+        # Safety check - wait for recent_list to be initialized
+        if recent_list.current is None:
+            return
+        
         recent_list.current.controls.clear()
         
         if not search_history:
@@ -204,6 +312,44 @@ def HomeView(page: ft.Page):
         # Navigate to profile/settings
         page.go("/settings")
     
+    def on_view_map_click(e):
+        """Open the map in OpenStreetMap directions with route pre-configured"""
+        if selected_destination["coords"] and current_location:
+            start_lat = current_location["lat"]
+            start_lon = current_location["lon"]
+            end_lat = selected_destination["coords"][0]
+            end_lon = selected_destination["coords"][1]
+            
+            # OpenStreetMap directions URL format
+            osm_url = f"https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route={start_lat},{start_lon}%3B{end_lat},{end_lon}"
+            
+            print(f"Opening OSM directions: {osm_url}")
+            print(f"Platform: {sys.platform}")
+            
+            try:
+                # Try using page.launch_url first (Flet's built-in method for Android)
+                page.launch_url(osm_url)
+                print("Opened with page.launch_url()")
+            except AttributeError:
+                try:
+                    # Fallback to webbrowser
+                    webbrowser.open(osm_url)
+                    print("Opened with webbrowser.open()")
+                except Exception as ex:
+                    print(f"Error opening URL with webbrowser: {ex}")
+                    page.snack_bar = ft.SnackBar(ft.Text(f"Error: {str(ex)}"))
+                    page.snack_bar.open = True
+                    page.update()
+            except Exception as ex:
+                print(f"Error opening URL: {ex}")
+                page.snack_bar = ft.SnackBar(ft.Text(f"Error opening map: {str(ex)}"))
+                page.snack_bar.open = True
+                page.update()
+        else:
+            page.snack_bar = ft.SnackBar(ft.Text("Route data not available"))
+            page.snack_bar.open = True
+            page.update()
+    
     def on_ar_mode_click(e):
         # Start AR navigation
         if not selected_destination["name"] or not selected_destination["coords"]:
@@ -229,7 +375,8 @@ def HomeView(page: ft.Page):
         page.session.set("current_route", route)
         page.go("/ar")
     
-    return ft.View(
+    # Build the view
+    view = ft.View(
         "/home",
         controls=[
             ft.Container(
@@ -351,75 +498,136 @@ def HomeView(page: ft.Page):
                         ),
                         
                         # Spacer
-                        ft.Container(height=50),
+                        ft.Container(height=20),
                         
-                        # Location Toggle and AR Mode Section (Centered)
+                        # Map and AR Mode Section
                         ft.Container(
                             ref=ar_section,
                             content=ft.Column(
                                 controls=[
-                                    # Location Toggle
+                                    # Location Info Container (Top)
                                     ft.Container(
-                                        content=ft.Row(
+                                        content=ft.Text(
+                                            ref=location_info_text,
+                                            value="My Location",
+                                            color="white",
+                                            size=12,
+                                            weight=ft.FontWeight.BOLD,
+                                            text_align=ft.TextAlign.CENTER
+                                        ),
+                                        bgcolor="#80000000",
+                                        border_radius=15,
+                                        padding=ft.padding.symmetric(horizontal=15, vertical=8),
+                                        alignment=ft.alignment.center,
+                                        margin=ft.margin.only(bottom=10)
+                                    ),
+                                    
+                                    # Loading Indicator
+                                    ft.Container(
+                                        ref=loading_indicator,
+                                        content=ft.Column(
                                             controls=[
-                                                ft.Container(
-                                                    content=ft.Text(
-                                                        "My Location",
-                                                        color="#041E42",
-                                                        size=14,
-                                                        weight=ft.FontWeight.BOLD
-                                                    ),
-                                                    bgcolor="white",
-                                                    border_radius=20,
-                                                    padding=ft.padding.symmetric(horizontal=20, vertical=10)
-                                                ),
-                                                ft.Icon(
-                                                    ft.Icons.ARROW_FORWARD,
-                                                    color="white",
-                                                    size=20
-                                                ),
-                                                ft.Container(
-                                                    content=ft.Text(
-                                                        ref=searched_place_text,
-                                                        value="Searched Place",
-                                                        color="white",
-                                                        size=12,
-                                                        weight=ft.FontWeight.BOLD,
-                                                        text_align=ft.TextAlign.CENTER
-                                                    ),
-                                                    border=ft.border.all(2, "white"),
-                                                    border_radius=20,
-                                                    padding=ft.padding.symmetric(horizontal=15, vertical=8)
-                                                )
+                                                ft.ProgressRing(color="white"),
+                                                ft.Text("Calculating route...", color="white", text_align=ft.TextAlign.CENTER, size=12)
                                             ],
                                             alignment=ft.MainAxisAlignment.CENTER,
-                                            spacing=15
+                                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                                            spacing=10
                                         ),
-                                        padding=ft.padding.only(bottom=20)
+                                        height=280,
+                                        alignment=ft.alignment.center,
+                                        visible=False,
+                                        bgcolor="#1a1a2e",
+                                        border_radius=15,
+                                        margin=ft.margin.only(bottom=15)
+                                    ),
+                                    
+                                    # Map Display Container
+                                    ft.Stack(
+                                        controls=[
+                                            ft.Container(
+                                                ref=map_display_container,
+                                                height=280,
+                                                border_radius=15,
+                                                bgcolor="#e8f4f8",
+                                                margin=ft.margin.only(bottom=15),
+                                                visible=False,
+                                                padding=ft.padding.all(15),
+                                                content=ft.Column(
+                                                    controls=[
+                                                        ft.Icon(
+                                                            ft.Icons.MAP,
+                                                            color="#002A7A",
+                                                            size=50
+                                                        ),
+                                                        ft.Text(
+                                                            ref=map_info_text,
+                                                            value="Route information",
+                                                            color="#002A7A",
+                                                            size=11,
+                                                            text_align=ft.TextAlign.CENTER,
+                                                            weight=ft.FontWeight.W_500
+                                                        )
+                                                    ],
+                                                    alignment=ft.MainAxisAlignment.CENTER,
+                                                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                                                    spacing=10
+                                                )
+                                            ),
+                                            
+                                            # View Full Map Button
+                                            ft.Container(
+                                                content=ft.ElevatedButton(
+                                                    ref=view_map_button,
+                                                    content=ft.Text(
+                                                        "View Full Map",
+                                                        size=12,
+                                                        weight=ft.FontWeight.BOLD,
+                                                        color="#002A7A"
+                                                    ),
+                                                    style=ft.ButtonStyle(
+                                                        bgcolor="white",
+                                                        shape=ft.RoundedRectangleBorder(radius=20),
+                                                        padding=ft.padding.symmetric(horizontal=20, vertical=8)
+                                                    ),
+                                                    on_click=on_view_map_click,
+                                                    disabled=True
+                                                ),
+                                                alignment=ft.alignment.bottom_center,
+                                                bottom=25,
+                                                right=10,
+                                                left=10
+                                            )
+                                        ],
+                                        height=280 + 15
                                     ),
                                     
                                     # AR Mode Button
-                                    ft.ElevatedButton(
-                                        content=ft.Container(
-                                            content=ft.Text(
-                                                "View AR Mode",
-                                                size=16,
-                                                weight=ft.FontWeight.BOLD,
-                                                color="#002A7A"
+                                    ft.Container(
+                                        content=ft.ElevatedButton(
+                                            content=ft.Container(
+                                                content=ft.Text(
+                                                    "View AR Mode",
+                                                    size=14,
+                                                    weight=ft.FontWeight.BOLD,
+                                                    color="#002A7A"
+                                                ),
+                                                padding=ft.padding.symmetric(horizontal=70, vertical=12)
                                             ),
-                                            padding=ft.padding.symmetric(horizontal=80, vertical=12)
+                                            style=ft.ButtonStyle(
+                                                bgcolor="white",
+                                                shape=ft.RoundedRectangleBorder(radius=25)
+                                            ),
+                                            on_click=on_ar_mode_click
                                         ),
-                                        style=ft.ButtonStyle(
-                                            bgcolor="white",
-                                            shape=ft.RoundedRectangleBorder(radius=25)
-                                        ),
-                                        on_click=on_ar_mode_click
+                                        alignment=ft.alignment.center
                                     )
                                 ],
                                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                                 spacing=0
                             ),
-                            visible=False
+                            visible=False,
+                            padding=ft.padding.symmetric(horizontal=20, vertical=0)
                         ),
                         
                         # Bottom spacer
@@ -435,7 +643,7 @@ def HomeView(page: ft.Page):
         bgcolor="#002A7A"
     )
     
-    # Populate recent searches on load
+    # Populate recent searches after view is built
     populate_recent_searches()
     
     return view

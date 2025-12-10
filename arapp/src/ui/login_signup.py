@@ -189,7 +189,23 @@ def LoginSignupView(page: ft.Page):
             login_password_error.current.visible = True
             page.update()
             return
-        
+
+        # Validate email based on role
+        is_cspc_email = email.endswith("@my.cspc.edu.ph") or email.endswith("@cspc.edu.ph")
+        selected_role = page.session.get("selected_role")
+        if selected_role == "CSPCean":
+            if not is_cspc_email:
+                login_email_error.current.value = "Please use your CSPC email."
+                login_email_error.current.visible = True
+                page.update()
+                return
+        elif selected_role == "Visitor":
+            if is_cspc_email:
+                login_email_error.current.value = "Please use your personal email, not CSPC email"
+                login_email_error.current.visible = True
+                page.update()
+                return
+                
         # Verify password
         if not verify_user_login(email, password):
             # Record failed attempt
