@@ -526,6 +526,14 @@ While the current implementation has limitations (simulated AR, no real GPS), it
 
 ### Montenegro, John Renzzo C.
 
+Developing SARI NA has been one of the most mentally demanding yet fulfilling project I've ever worked on. The biggest problem was creating an AR-like navigation system within the limitations of the Flet framework. Since Flet doesn’t support native camera access or real-time AR rendering, I had to come up with our own alternative streaming camera frames, calculating direction overlays, and building a simulated AR experience from scratch. Every time we thought we fixed the AR problem, new problems come up one after another.
+
+I was so lost in the production period that it gave me bad migraines, but this project pushed me to think more creatively and understand the deeper mechanics behind AR, UI rendering, and device sensors. 
+
+I also learned how to manage routing, secure authentication, and UI responsiveness while running camera threads in the background. Building the interactive map as a backup navigation option taught me to prioritize user needs over technical idealism.
+
+Overall, this project strengthened my problem-solving skills and showed me the value of resilience and adaptiveness when faced by problems. Turning limitations into solutions made the development process meaningful. 
+
 ---
 
 ### Nas, John Carlo E.
